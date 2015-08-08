@@ -32,9 +32,8 @@ var localAddr string
 var remoteAddr string
 
 func init() {
-	addrs, _ := net.InterfaceAddrs()
 	localAddr = fmt.Sprintf("%s:%s", "0.0.0.0", "5555")
-	remoteAddr = fmt.Sprintf("%s:%s", addrs[0].String(), "5555")
+	remoteAddr = fmt.Sprintf("%s:%s", getLocalIp(), "5555")
 
 }
 
@@ -44,7 +43,8 @@ func main() {
 		os.Exit(0)
 	}
 	etcd = os.Args[1]
-	fmt.Printf("etcd address: %s\n", etcd)
+	fmt.Printf("etcd  address: %s\n", etcd)
+	fmt.Printf("local address: %s\n", remoteAddr)
 	fmt.Printf("listen on %s ......", "5555")
 
 	startEtcdViewerServer()
@@ -83,4 +83,19 @@ func reqRawEtcdInfo(reqUri string) ([]byte, error) {
 	rawJson, err := ioutil.ReadAll(res.Body)
 	json.Indent(&prettyJson, rawJson, "", "    ")
 	return prettyJson.Bytes(), nil
+}
+
+func getLocalIp() string {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		fmt.Printf("Error: %s", err.Error())
+		os.Exit(-1)
+	}
+
+	for _, addr := range addrs {
+		if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			return ipnet.IP.To4().String()
+		}
+	}
+	return "localhost"
 }
